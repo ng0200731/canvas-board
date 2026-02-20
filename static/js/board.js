@@ -465,7 +465,10 @@
 
         async function runSearch(q) {
             // Reset all highlights
-            document.querySelectorAll(".card").forEach(el => el.style.opacity = "1");
+            document.querySelectorAll(".card").forEach(el => {
+                el.style.opacity = "1";
+                el.style.border = "";
+            });
             document.querySelectorAll(".tag").forEach(el => el.style.background = "");
             if (!q) return;
             const res = await api(`/api/boards/${BOARD_ID}/search?q=${encodeURIComponent(q)}`);
@@ -474,6 +477,8 @@
                 document.querySelectorAll(".card").forEach(el => {
                     const cid = el.dataset.cardId;
                     if (res.card_ids.includes(cid)) {
+                        // Add red border to matching cards
+                        el.style.border = "2px solid #ff0000";
                         // Highlight matching tags yellow
                         el.querySelectorAll(".tag").forEach(tag => {
                             const tagText = tag.childNodes[0]?.textContent?.toLowerCase() || "";
