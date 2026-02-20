@@ -71,9 +71,9 @@ def assign_email(email_id):
 
     card_id = str(uuid.uuid4())
     db.execute(
-        """INSERT INTO cards (id, board_id, title, body, sort_order)
-           VALUES (?, ?, ?, ?, ?)""",
-        (card_id, board_id, em["subject"], em["body_text"][:500], sort_order),
+        """INSERT INTO cards (id, board_id, title, body, sort_order, email_id)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (card_id, board_id, em["subject"], em["body_text"][:500], sort_order, email_id),
     )
 
     # Move attachments to board uploads

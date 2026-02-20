@@ -51,6 +51,14 @@ def get_cards(board_id):
         )
         card["tags"] = tags
 
+        # Add email info if card is from email
+        if card.get("email_id"):
+            email = db.query_one(
+                "SELECT id, from_addr, subject, body_text FROM emails WHERE id = ?",
+                (card["email_id"],)
+            )
+            card["email"] = email
+
     connections = db.query(
         "SELECT * FROM connections WHERE board_id = ?", (board_id,)
     )

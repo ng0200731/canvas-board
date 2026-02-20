@@ -296,6 +296,47 @@ a { color: #000; }
 }
 .card-drop-zone.drag-over { background: #f5f5f5; color: #000; }
 
+/* Card email info */
+.card-email-info {
+    padding: 0.5rem;
+    background: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.75rem;
+}
+.email-badge {
+    display: inline-block;
+    background: #000;
+    color: #fff;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.3rem;
+}
+.email-from {
+    color: #666;
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.email-preview {
+    color: #333;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.email-link {
+    color: #000;
+    text-decoration: underline;
+    font-size: 0.7rem;
+}
+.email-link:hover {
+    text-decoration: none;
+}
+
 /* Card context menu */
 .card-context-menu {
     position: absolute;

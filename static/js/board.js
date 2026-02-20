@@ -155,6 +155,19 @@
         header.appendChild(menuBtn);
         el.appendChild(header);
 
+        // Email info (if card is from email)
+        if (card.email) {
+            const emailDiv = document.createElement("div");
+            emailDiv.className = "card-email-info";
+            emailDiv.innerHTML = `
+                <div class="email-badge">📧 Email</div>
+                <div class="email-from">From: ${card.email.from_addr}</div>
+                <div class="email-preview">${card.email.body_text ? card.email.body_text.substring(0, 100) + '...' : ''}</div>
+                <a href="/emails/${card.email.id}" target="_blank" class="email-link">Read full email →</a>
+            `;
+            el.appendChild(emailDiv);
+        }
+
         // Files
         if (card.files && card.files.length > 0) {
             const filesDiv = document.createElement("div");
