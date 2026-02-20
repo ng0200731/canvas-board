@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Emails — Canva Board{% endblock %}
+{% block content %}
+<div class="email-list">
+    <h2>Email Inbox</h2>
+    <form method="POST" action="{{ url_for('email.poll_now') }}" style="margin-bottom:1rem;">
+        <button type="submit" style="padding:0.4rem 0.8rem;border:1px solid #000;background:#fff;cursor:pointer;">Check for New Emails</button>
+    </form>
+    {% for em in emails %}
+    <a class="email-item" href="{{ url_for('email.email_detail', email_id=em.id) }}">
+        <span class="email-from">{{ em.from_addr }}</span>
+        <span class="email-subject">{{ em.subject }}</span>
+        <span class="email-date">{{ em.received_at[:16] }}</span>
+        {% if em.processed == 0 %}
+        <span style="font-size:0.75rem;background:#000;color:#fff;padding:0.1rem 0.4rem;">NEW</span>
+        {% elif em.processed == 2 %}
+        <span style="font-size:0.75rem;opacity:0.4;">ignored</span>
+        {% endif %}
+    </a>
+    {% endfor %}
+    {% if not emails %}
+    <p style="opacity:0.5;">No emails yet. Click "Check for New Emails" to poll.</p>
+    {% endif %}
+</div>
+{% endblock %}

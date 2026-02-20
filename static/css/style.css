@@ -1,0 +1,329 @@
+/* Canva Board — Minimal B&W */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #fff;
+    color: #000;
+    line-height: 1.5;
+}
+
+a { color: #000; }
+
+/* Top bar */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1.2rem;
+    border-bottom: 1px solid #000;
+}
+.topbar .logo { font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; }
+.topbar-right a { text-decoration: none; }
+.topbar-right a:hover { text-decoration: underline; }
+.user-name { opacity: 0.6; }
+
+/* Flash messages */
+.flash-messages { padding: 0.5rem 1.2rem; }
+.flash { padding: 0.5rem 0.8rem; border: 1px solid #000; margin-bottom: 0.4rem; font-size: 0.9rem; }
+.flash-error { background: #f5f5f5; }
+
+/* Auth pages */
+.auth-container {
+    max-width: 360px;
+    margin: 4rem auto;
+    padding: 2rem;
+    border: 1px solid #000;
+}
+.auth-container h1 { margin-bottom: 1.2rem; font-size: 1.4rem; }
+.auth-container label { display: block; margin-top: 0.8rem; font-size: 0.85rem; font-weight: 600; }
+.auth-container input[type="email"],
+.auth-container input[type="text"],
+.auth-container input[type="password"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #000;
+    font-size: 0.95rem;
+    margin-top: 0.2rem;
+}
+.auth-container button {
+    margin-top: 1.2rem;
+    width: 100%;
+    padding: 0.6rem;
+    background: #000;
+    color: #fff;
+    border: none;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.auth-container button:hover { background: #333; }
+.auth-link { margin-top: 1rem; font-size: 0.85rem; text-align: center; }
+
+/* Dashboard */
+.dashboard { padding: 1.5rem; }
+.dashboard h2 { font-size: 1.2rem; margin-bottom: 1rem; }
+.board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.board-card {
+    border: 1px solid #000;
+    padding: 1rem;
+    text-decoration: none;
+    color: #000;
+    transition: background 0.15s;
+}
+.board-card:hover { background: #f5f5f5; }
+.board-card h3 { font-size: 1rem; margin-bottom: 0.3rem; }
+.board-card p { font-size: 0.8rem; opacity: 0.6; }
+.new-board-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.new-board-form input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #000;
+    font-size: 0.9rem;
+}
+.new-board-form button {
+    padding: 0.5rem 1rem;
+    background: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* Board canvas page */
+.board-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #ccc;
+    flex-wrap: wrap;
+}
+.board-toolbar button, .board-toolbar select {
+    padding: 0.35rem 0.7rem;
+    border: 1px solid #000;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.board-toolbar button:hover { background: #f0f0f0; }
+.board-toolbar button.active { background: #000; color: #fff; }
+.board-toolbar .spacer { flex: 1; }
+.board-toolbar input[type="text"] {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid #000;
+    font-size: 0.85rem;
+    width: 180px;
+}
+
+#canvas-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 100px);
+    overflow: auto;
+    background:
+        radial-gradient(circle, #ddd 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+#canvas {
+    position: relative;
+    min-width: 3000px;
+    min-height: 3000px;
+}
+
+/* Cards on canvas */
+.card {
+    position: absolute;
+    width: 260px;
+    background: #fff;
+    border: 1px solid #000;
+    cursor: grab;
+    user-select: none;
+}
+.card:active { cursor: grabbing; }
+.card.no-drag {
+    cursor: default;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: grab;
+}
+.card.no-drag .card-header {
+    cursor: default;
+}
+.card-header .card-title {
+    flex: 1;
+    outline: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+}
+.card-header .card-title[contenteditable="true"] {
+    cursor: text;
+}
+.card-menu-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 0.3rem;
+}
+.card-body { padding: 0.5rem 0.6rem; font-size: 0.8rem; color: #444; }
+.card-files { padding: 0.4rem 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.card-files img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+}
+.card-files .file-icon {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    text-align: center;
+    word-break: break-all;
+    padding: 0.2rem;
+}
+.card-tags {
+    padding: 0.3rem 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    align-items: center;
+    pointer-events: auto;
+}
+.tag {
+    background: #000;
+    color: #fff;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 2px;
+    cursor: default;
+}
+.tag .tag-remove {
+    margin-left: 0.3rem;
+    cursor: pointer;
+    opacity: 0.7;
+}
+.tag .tag-remove:hover { opacity: 1; }
+.tag-input {
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 0.75rem;
+    width: 60px;
+    padding: 0.2rem 0.4rem;
+    background: #fff;
+    cursor: text;
+    user-select: text;
+}
+.card-drop-zone {
+    padding: 0.5rem 0.6rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #999;
+    border-top: 1px dashed #ccc;
+}
+.card-drop-zone.drag-over { background: #f5f5f5; color: #000; }
+
+/* Card context menu */
+.card-context-menu {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #000;
+    z-index: 1000;
+    min-width: 140px;
+}
+.card-context-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.4rem 0.8rem;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.card-context-menu button:hover { background: #f0f0f0; }
+
+/* Share modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal {
+    background: #fff;
+    border: 1px solid #000;
+    padding: 1.5rem;
+    min-width: 360px;
+    max-width: 500px;
+}
+.modal h3 { margin-bottom: 1rem; }
+.modal input[type="text"], .modal input[type="email"] {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid #000;
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+}
+.modal button {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-right: 0.4rem;
+}
+.modal button.secondary { background: #fff; color: #000; }
+.modal button:hover { opacity: 0.85; }
+
+/* Email inbox */
+.email-list { padding: 1.5rem; }
+.email-list h2 { margin-bottom: 1rem; }
+.email-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #eee;
+    margin-bottom: 0.3rem;
+    text-decoration: none;
+    color: #000;
+}
+.email-item:hover { background: #f5f5f5; }
+.email-item .email-from { font-weight: 600; font-size: 0.9rem; }
+.email-item .email-subject { font-size: 0.85rem; flex: 1; margin-left: 1rem; }
+.email-item .email-date { font-size: 0.8rem; opacity: 0.5; }
+.email-detail { padding: 1.5rem; max-width: 800px; }
+.email-detail h2 { margin-bottom: 0.5rem; }
+.email-meta { font-size: 0.85rem; opacity: 0.6; margin-bottom: 1rem; }
+.email-body { border: 1px solid #eee; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.email-attachments { margin-bottom: 1rem; }
+.email-attachments h4 { margin-bottom: 0.5rem; }
+.email-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.email-actions button, .email-actions select {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.email-actions button.secondary { background: #fff; color: #000; }

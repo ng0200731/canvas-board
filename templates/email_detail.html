@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ email.subject }} — Canva Board{% endblock %}
+{% block content %}
+<div class="email-detail">
+    <h2>{{ email.subject }}</h2>
+    <div class="email-meta">
+        From: {{ email.from_addr }} · {{ email.received_at[:16] }}
+    </div>
+    <div class="email-body">{{ email.body_text or email.body_html|safe or '(no body)' }}</div>
+
+    {% if attachments %}
+    <div class="email-attachments">
+        <h4>Attachments ({{ attachments|length }})</h4>
+        {% for att in attachments %}
+        <span style="font-size:0.85rem;margin-right:0.5rem;">{{ att.original_name }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if email.processed == 0 %}
+    <div class="email-actions">
+        <form method="POST" action="{{ url_for('email.assign_email', email_id=email.id) }}" style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <input type="text" name="new_board_title" placeholder="New board title..." style="padding:0.4rem;border:1px solid #000;">
+            <button type="submit">Create New Board</button>
+        </form>
+        <form method="POST" action="{{ url_for('email.assign_email', email_id=email.id) }}" style="display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;">
+            <select name="board_id" style="padding:0.4rem;border:1px solid #000;">
+                <option value="">— Select existing board —</option>
+                {% for b in boards %}
+                <option value="{{ b.id }}">{{ b.title }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Add to Board</button>
+        </form>
+        <form method="POST" action="{{ url_for('email.ignore_email', email_id=email.id) }}" style="margin-top:0.5rem;">
+            <button type="submit" class="secondary">Ignore</button>
+        </form>
+    </div>
+    {% else %}
+    <p style="font-size:0.85rem;opacity:0.6;">
+        {% if email.processed == 1 %}Assigned to a board.{% else %}Ignored.{% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

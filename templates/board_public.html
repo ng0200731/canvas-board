@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ board.title }} — Shared Board</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="topbar">
+        <span class="logo">{{ board.title }}</span>
+        <div class="topbar-right">
+            <span class="user-name">Shared view (read-only)</span>
+        </div>
+    </nav>
+    <div id="canvas-container">
+        <div id="canvas"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/leader-line.min.js') }}"></script>
+    <script>
+    (function() {
+        const cards = {{ cards | tojson }};
+        const connections = {{ connections | tojson }};
+        const viewMode = "{{ board.view_mode }}";
+        const canvas = document.getElementById("canvas");
+
+        cards.forEach((card, i) => {
+            const el = document.createElement("div");
+            el.className = "card";
+            el.id = "card-" + card.id;
+            el.style.cursor = "default";
+
+            if (viewMode === "flowchart") {
+                el.style.left = "400px";
+                el.style.top = (i * 220 + 40) + "px";
+            } else {
+                el.style.left = (card.pos_x || 100) + "px";
+                el.style.top = (card.pos_y || 100) + "px";
+            }
+
+            let html = '<div class="card-header"><span class="card-title">' +
+                card.title + '</span></div>';
+
+            if (card.files && card.files.length) {
+                html += '<div class="card-files">';
+                card.files.forEach(f => {
+                    if (f.is_image) {
+                        html += '<img src="' + f.thumb_url + '" alt="' + f.original_name + '">';
+                    } else {
+                        html += '<div class="file-icon">' +
+                            f.original_name.split(".").pop().toUpperCase() + '</div>';
+                    }
+                });
+                html += '</div>';
+            }
+
+            if (card.tags && card.tags.length) {
+                html += '<div class="card-tags">';
+                card.tags.forEach(t => {
+                    html += '<span class="tag">' + t.name + '</span>';
+                });
+                html += '</div>';
+            }
+
+            el.innerHTML = html;
+            canvas.appendChild(el);
+        });
+
+        // Draw lines
+        setTimeout(() => {
+            if (viewMode === "flowchart") {
+                for (let i = 0; i < cards.length - 1; i++) {
+                    const a = document.getElementById("card-" + cards[i].id);
+                    const b = document.getElementById("card-" + cards[i+1].id);
+                    if (a && b) {
+                        try { new LeaderLine(a, b, {
+                            color: "#000", size: 2, path: "straight",
+                            startPlug: "disc", endPlug: "arrow1",
+                            startSocket: "bottom", endSocket: "top"
+                        }); } catch(e) {}
+                    }
+                }
+            }
+            connections.forEach(conn => {
+                const a = document.getElementById("card-" + conn.from_card_id);
+                const b = document.getElementById("card-" + conn.to_card_id);
+                if (a && b) {
+                    try { new LeaderLine(a, b, {
+                        color: "#000", size: 2, path: "fluid",
+                        startPlug: "disc", endPlug: "arrow1"
+                    }); } catch(e) {}
+                }
+            });
+        }, 100);
+    })();
+    </script>
+</body>
+</html>
