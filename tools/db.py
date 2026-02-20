@@ -5,7 +5,7 @@ import config
 
 def get_conn():
     os.makedirs(os.path.dirname(config.DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(config.DB_PATH)
+    conn = sqlite3.connect(config.DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
@@ -37,9 +37,22 @@ def query_one(sql, params=()):
 
 def execute(sql, params=()):
     conn = get_conn()
-    conn.execute(sql, params)
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute(sql, params)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def execute_many(operations):
+    """Execute multiple SQL operations in a single transaction"""
+    conn = get_conn()
+    try:
+        for sql, params in operations:
+            conn.execute(sql, params)
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def execute_returning(sql, params=()):

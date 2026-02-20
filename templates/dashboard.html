@@ -3,12 +3,12 @@
 {% block content %}
 <div class="dashboard">
     <h2>Your Boards</h2>
-    <form class="new-board-form" method="POST" action="{{ url_for('board.create_board') }}">
-        <input type="text" name="title" placeholder="New board title..." required>
-        <button type="submit">+ Create Board</button>
-    </form>
+    <div class="new-board-form">
+        <input type="text" id="quick-board-title" placeholder="New board title..." required>
+        <button type="button" id="btn-open-board-modal">+ Create Board</button>
+    </div>
     <div style="margin-bottom:1rem;">
-        <input type="text" id="tag-search" placeholder="Search by tag..." style="padding:0.4rem 0.6rem;border:1px solid #000;font-size:0.85rem;width:240px;">
+        <input type="text" id="tag-search" placeholder="Search by tag or metadata..." style="padding:0.4rem 0.6rem;border:1px solid #000;font-size:0.85rem;width:240px;">
     </div>
     {% if pending_email_count > 0 %}
     <p style="margin-bottom:1rem;font-size:0.9rem;">
@@ -17,9 +17,21 @@
     {% endif %}
     <div class="board-grid">
         {% for b in boards %}
-        <a class="board-card" href="{{ url_for('board.view_board', board_id=b.id) }}" data-board-id="{{ b.id }}">
+        <a class="board-card" href="{{ url_for('board.view_board', board_id=b.id) }}" data-board-id="{{ b.id }}" style="position:relative;">
+            <div class="board-card-actions" style="position:absolute;top:0.5rem;right:0.5rem;display:none;gap:0.3rem;z-index:10;">
+                <button class="board-action-btn board-edit-btn" data-board-id="{{ b.id }}" title="Edit board" style="padding:0.3rem 0.5rem;border:1px solid #000;background:#fff;cursor:pointer;font-size:0.85rem;">✎</button>
+                <button class="board-action-btn board-delete-btn" data-board-id="{{ b.id }}" title="Delete board" style="padding:0.3rem 0.5rem;border:1px solid #000;background:#fff;cursor:pointer;font-size:0.85rem;">🗑</button>
+            </div>
             <h3>{{ b.title }}</h3>
             <p>{{ b.card_count }} card(s) · {{ b.view_mode }}</p>
+            {% if b.sales_team or b.customer or b.brand_site or b.category %}
+            <div style="font-size:0.75rem;color:#666;margin:0.5rem 0;line-height:1.4;">
+                {% if b.sales_team %}<div><strong>Sales:</strong> {{ b.sales_team }}</div>{% endif %}
+                {% if b.customer %}<div><strong>Customer:</strong> {{ b.customer }}</div>{% endif %}
+                {% if b.brand_site %}<div><strong>Site:</strong> {{ b.brand_site }}</div>{% endif %}
+                {% if b.category %}<div><strong>Category:</strong> {{ b.category }}</div>{% endif %}
+            </div>
+            {% endif %}
             <p>{{ b.updated_at[:10] }}</p>
             <div class="board-image-popup" onclick="event.preventDefault(); event.stopPropagation();">
                 <div class="board-image-popup-content">
@@ -33,14 +45,238 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Create Board Modal -->
+<div id="create-board-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:2rem;border:2px solid #000;max-width:500px;width:90%;">
+        <h3 style="margin-top:0;">Create New Board</h3>
+        <form id="create-board-form" method="POST" action="{{ url_for('board.create_board') }}">
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Board Title</label>
+                <input type="text" name="title" id="modal-board-title" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Sales Team</label>
+                <select name="sales_team" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="Ken">Ken</option>
+                    <option value="sales1">sales1</option>
+                    <option value="sales2">sales2</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Customer</label>
+                <select name="customer" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="disney">disney</option>
+                    <option value="gap">gap</option>
+                    <option value="victoria secret">victoria secret</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Brand Site</label>
+                <select name="brand_site" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="Shanghai">Shanghai</option>
+                    <option value="US">US</option>
+                    <option value="Europe">Europe</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Category</label>
+                <select name="category" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="footwear">footwear</option>
+                    <option value="soft toys">soft toys</option>
+                    <option value="home/cushions">home/cushions</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                <button type="button" id="btn-cancel-board" style="padding:0.5rem 1rem;border:1px solid #000;background:#fff;cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:0.5rem 1rem;border:1px solid #000;background:#000;color:#fff;cursor:pointer;">Create Board</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Board Modal -->
+<div id="edit-board-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:2rem;border:2px solid #000;max-width:500px;width:90%;">
+        <h3 style="margin-top:0;">Edit Board</h3>
+        <form id="edit-board-form" method="POST">
+            <input type="hidden" id="edit-board-id" name="board_id">
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Board Title</label>
+                <input type="text" name="title" id="edit-board-title" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Sales Team</label>
+                <select name="sales_team" id="edit-sales-team" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="Ken">Ken</option>
+                    <option value="sales1">sales1</option>
+                    <option value="sales2">sales2</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Customer</label>
+                <select name="customer" id="edit-customer" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="disney">disney</option>
+                    <option value="gap">gap</option>
+                    <option value="victoria secret">victoria secret</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Brand Site</label>
+                <select name="brand_site" id="edit-brand-site" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="Shanghai">Shanghai</option>
+                    <option value="US">US</option>
+                    <option value="Europe">Europe</option>
+                </select>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+                <label style="display:block;margin-bottom:0.3rem;font-weight:bold;">Category</label>
+                <select name="category" id="edit-category" required style="width:100%;padding:0.5rem;border:1px solid #000;font-size:1rem;">
+                    <option value="">Select...</option>
+                    <option value="footwear">footwear</option>
+                    <option value="soft toys">soft toys</option>
+                    <option value="home/cushions">home/cushions</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                <button type="button" id="btn-cancel-edit" style="padding:0.5rem 1rem;border:1px solid #000;background:#fff;cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:0.5rem 1rem;border:1px solid #000;background:#000;color:#fff;cursor:pointer;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 (function() {
+    // Modal controls
+    const modal = document.getElementById("create-board-modal");
+    const btnOpen = document.getElementById("btn-open-board-modal");
+    const btnCancel = document.getElementById("btn-cancel-board");
+    const quickTitle = document.getElementById("quick-board-title");
+    const modalTitle = document.getElementById("modal-board-title");
+
+    btnOpen.addEventListener("click", () => {
+        modalTitle.value = quickTitle.value;
+        modal.style.display = "flex";
+        modalTitle.focus();
+    });
+
+    btnCancel.addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+
+    // Edit modal controls
+    const editModal = document.getElementById("edit-board-modal");
+    const btnCancelEdit = document.getElementById("btn-cancel-edit");
+    const editForm = document.getElementById("edit-board-form");
+
+    btnCancelEdit.addEventListener("click", () => {
+        editModal.style.display = "none";
+    });
+
+    editForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const boardId = document.getElementById("edit-board-id").value;
+        const formData = new FormData(editForm);
+
+        try {
+            const res = await fetch(`/boards/${boardId}/edit`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                alert("Failed to update board");
+            }
+        } catch (e) {
+            console.error("Update failed:", e);
+            alert("Failed to update board");
+        }
+    });
+
+    // Board card hover actions
+    document.querySelectorAll(".board-card").forEach(card => {
+        const actions = card.querySelector(".board-card-actions");
+
+        card.addEventListener("mouseenter", () => {
+            actions.style.display = "flex";
+        });
+
+        card.addEventListener("mouseleave", () => {
+            actions.style.display = "none";
+        });
+    });
+
+    // Edit board button
+    document.querySelectorAll(".board-edit-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const boardId = btn.dataset.boardId;
+
+            try {
+                // Fetch board data
+                const res = await fetch(`/api/boards/${boardId}`);
+                const board = await res.json();
+
+                // Populate edit form
+                document.getElementById("edit-board-id").value = board.id;
+                document.getElementById("edit-board-title").value = board.title;
+                document.getElementById("edit-sales-team").value = board.sales_team || "";
+                document.getElementById("edit-customer").value = board.customer || "";
+                document.getElementById("edit-brand-site").value = board.brand_site || "";
+                document.getElementById("edit-category").value = board.category || "";
+
+                // Show modal
+                editModal.style.display = "flex";
+            } catch (e) {
+                console.error("Failed to load board data:", e);
+                alert("Failed to load board data");
+            }
+        });
+    });
+
+    // Delete board button
+    document.querySelectorAll(".board-delete-btn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const boardId = btn.dataset.boardId;
+
+            if (!confirm("Are you sure you want to delete this board? This cannot be undone.")) {
+                return;
+            }
+
+            try {
+                // Create a form and submit it
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = `/boards/${boardId}/delete`;
+                document.body.appendChild(form);
+                form.submit();
+            } catch (e) {
+                console.error("Delete failed:", e);
+                alert("Failed to delete board");
+            }
+        });
+    });
+
+    // Tag search
     const input = document.getElementById("tag-search");
     let timeout;
     input.addEventListener("input", () => {
         clearTimeout(timeout);
         timeout = setTimeout(async () => {
-            const q = input.value.trim();
+            const q = input.value.trim().toLowerCase();
             const cards = document.querySelectorAll(".board-card");
             if (!q) {
                 cards.forEach(c => {
@@ -49,14 +285,26 @@
                 });
                 return;
             }
+
+            // Search both tags and metadata
             const res = await fetch(`/api/search/tags?q=${encodeURIComponent(q)}`);
             const data = await res.json();
             const matchIds = new Set(data.boards.map(b => b.id));
+
             cards.forEach(c => {
-                c.style.display = matchIds.has(c.dataset.boardId) ? "" : "none";
+                const boardId = c.dataset.boardId;
+                let matches = matchIds.has(boardId);
+
+                // Also check metadata text content
+                if (!matches) {
+                    const text = c.textContent.toLowerCase();
+                    matches = text.includes(q);
+                }
+
+                c.style.display = matches ? "" : "none";
                 // Append ?tag= to board links so the board page can auto-highlight
                 const base = c.getAttribute("href").split("?")[0];
-                c.setAttribute("href", base + "?tag=" + encodeURIComponent(q));
+                c.setAttribute("href", base + "?tag=" + encodeURIComponent(input.value.trim()));
             });
         }, 300);
     });

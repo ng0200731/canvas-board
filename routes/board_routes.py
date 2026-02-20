@@ -33,13 +33,20 @@ def dashboard():
 @login_required
 def create_board():
     title = request.form.get("title", "").strip()
+    sales_team = request.form.get("sales_team", "").strip()
+    customer = request.form.get("customer", "").strip()
+    brand_site = request.form.get("brand_site", "").strip()
+    category = request.form.get("category", "").strip()
+
     if not title:
         flash("Board title is required.", "error")
         return redirect(url_for("board.dashboard"))
+
     board_id = str(uuid.uuid4())
     db.execute(
-        "INSERT INTO boards (id, title, owner_id) VALUES (?, ?, ?)",
-        (board_id, title, current_user.id),
+        """INSERT INTO boards (id, title, owner_id, sales_team, customer, brand_site, category)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (board_id, title, current_user.id, sales_team, customer, brand_site, category),
     )
     return redirect(url_for("board.view_board", board_id=board_id))
 
@@ -70,7 +77,15 @@ def delete_board(board_id):
     if not board or board["owner_id"] != current_user.id:
         flash("Cannot delete this board.", "error")
         return redirect(url_for("board.dashboard"))
-    db.execute("DELETE FROM boards WHERE id = ?", (board_id,))
+
+    # Simple delete - CASCADE should handle related data
+    operations = [
+        ("PRAGMA foreign_keys = OFF", ()),
+        ("DELETE FROM boards WHERE id = ?", (board_id,)),
+        ("PRAGMA foreign_keys = ON", ()),
+    ]
+    db.execute_many(operations)
+
     flash("Board deleted.", "success")
     return redirect(url_for("board.dashboard"))
 
@@ -96,3 +111,31 @@ def update_board(board_id):
         from flask import jsonify
         return jsonify({"ok": True})
     return redirect(url_for("board.view_board", board_id=board_id))
+
+
+@board_bp.route("/boards/<board_id>/edit", methods=["POST"])
+@login_required
+def edit_board(board_id):
+    board = db.query_one("SELECT * FROM boards WHERE id = ?", (board_id,))
+    if not board or board["owner_id"] != current_user.id:
+        flash("Cannot edit this board.", "error")
+        return redirect(url_for("board.dashboard"))
+
+    title = request.form.get("title", "").strip()
+    sales_team = request.form.get("sales_team", "").strip()
+    customer = request.form.get("customer", "").strip()
+    brand_site = request.form.get("brand_site", "").strip()
+    category = request.form.get("category", "").strip()
+
+    if not title:
+        flash("Board title is required.", "error")
+        return redirect(url_for("board.dashboard"))
+
+    db.execute(
+        """UPDATE boards SET title = ?, sales_team = ?, customer = ?, brand_site = ?, category = ?, updated_at = datetime('now')
+           WHERE id = ?""",
+        (title, sales_team, customer, brand_site, category, board_id),
+    )
+
+    flash("Board updated successfully.", "success")
+    return redirect(url_for("board.dashboard"))

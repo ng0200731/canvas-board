@@ -2,14 +2,24 @@
 {% block title %}{{ board.title }} — Canva Board{% endblock %}
 {% block content %}
 <div class="board-toolbar">
-    <button id="btn-add-card">+ Card</button>
-    <button id="btn-flowchart" class="{{ 'active' if board.view_mode == 'flowchart' }}">Flowchart</button>
-    <button id="btn-freeform" class="{{ 'active' if board.view_mode == 'freeform' }}">Freeform</button>
-    <button id="btn-save-positions" style="display:none;">Save</button>
-    <span class="spacer"></span>
-    <input type="text" id="search-input" placeholder="Search tags...">
-    <button id="btn-share">Share</button>
-    <button id="btn-export">Export</button>
+    <div style="display:flex;align-items:center;gap:1rem;flex:1;">
+        <button id="btn-add-card">+ Card</button>
+        <button id="btn-flowchart" class="{{ 'active' if board.view_mode == 'flowchart' }}">Flowchart</button>
+        <button id="btn-freeform" class="{{ 'active' if board.view_mode == 'freeform' }}">Freeform</button>
+        <button id="btn-save-positions" style="display:none;">Save</button>
+        <span class="spacer"></span>
+        <div style="font-size:0.85rem;color:#666;display:flex;gap:1rem;">
+            {% if board.sales_team %}<span><strong>Sales:</strong> {{ board.sales_team }}</span>{% endif %}
+            {% if board.customer %}<span><strong>Customer:</strong> {{ board.customer }}</span>{% endif %}
+            {% if board.brand_site %}<span><strong>Site:</strong> {{ board.brand_site }}</span>{% endif %}
+            {% if board.category %}<span><strong>Category:</strong> {{ board.category }}</span>{% endif %}
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+        <input type="text" id="search-input" placeholder="Search tags...">
+        <button id="btn-share">Share</button>
+        <button id="btn-export">Export</button>
+    </div>
 </div>
 <div id="canvas-container">
     <!-- Canvas controls (top-left overlay) -->

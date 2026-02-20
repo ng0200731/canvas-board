@@ -325,3 +325,12 @@ def get_board_images(board_id):
         img["thumb_url"] = get_thumb_url(board_id, img["stored_name"])
 
     return jsonify({"images": images})
+
+
+@api_bp.route("/boards/<board_id>", methods=["GET"])
+@login_required
+def get_board(board_id):
+    board = _check_board_access(board_id)
+    if not board:
+        return jsonify({"error": "Access denied"}), 403
+    return jsonify(dict(board))
