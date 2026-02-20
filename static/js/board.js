@@ -462,22 +462,43 @@
         // Search
         const searchInput = document.getElementById("search-input");
         let searchTimeout;
+
+        async function runSearch(q) {
+            // Reset all highlights
+            document.querySelectorAll(".card").forEach(el => el.style.opacity = "1");
+            document.querySelectorAll(".tag").forEach(el => el.style.background = "");
+            if (!q) return;
+            const res = await api(`/api/boards/${BOARD_ID}/search?q=${encodeURIComponent(q)}`);
+            if (res.card_ids) {
+                const qLower = q.toLowerCase();
+                document.querySelectorAll(".card").forEach(el => {
+                    const cid = el.dataset.cardId;
+                    if (res.card_ids.includes(cid)) {
+                        // Highlight matching tags yellow
+                        el.querySelectorAll(".tag").forEach(tag => {
+                            const tagText = tag.childNodes[0]?.textContent?.toLowerCase() || "";
+                            if (tagText.includes(qLower)) {
+                                tag.style.background = "#ffe066";
+                            }
+                        });
+                    } else {
+                        el.style.opacity = "0.2";
+                    }
+                });
+            }
+        }
+
         searchInput.addEventListener("input", () => {
             clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(async () => {
-                const q = searchInput.value.trim();
-                // Clear highlights
-                document.querySelectorAll(".card").forEach(el => el.style.opacity = "1");
-                if (!q) return;
-                const res = await api(`/api/boards/${BOARD_ID}/search?q=${encodeURIComponent(q)}`);
-                if (res.card_ids) {
-                    document.querySelectorAll(".card").forEach(el => {
-                        const cid = el.dataset.cardId;
-                        el.style.opacity = res.card_ids.includes(cid) ? "1" : "0.2";
-                    });
-                }
-            }, 300);
+            searchTimeout = setTimeout(() => runSearch(searchInput.value.trim()), 300);
         });
+
+        // Auto-highlight from dashboard tag search
+        const urlTag = new URLSearchParams(window.location.search).get("tag");
+        if (urlTag) {
+            searchInput.value = urlTag;
+            runSearch(urlTag);
+        }
 
         // Share
         document.getElementById("btn-share").addEventListener("click", () => {

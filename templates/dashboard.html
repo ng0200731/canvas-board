@@ -7,6 +7,9 @@
         <input type="text" name="title" placeholder="New board title..." required>
         <button type="submit">+ Create Board</button>
     </form>
+    <div style="margin-bottom:1rem;">
+        <input type="text" id="tag-search" placeholder="Search by tag..." style="padding:0.4rem 0.6rem;border:1px solid #000;font-size:0.85rem;width:240px;">
+    </div>
     {% if pending_email_count > 0 %}
     <p style="margin-bottom:1rem;font-size:0.9rem;">
         <a href="{{ url_for('email.inbox') }}">{{ pending_email_count }} pending email(s)</a>
@@ -14,7 +17,7 @@
     {% endif %}
     <div class="board-grid">
         {% for b in boards %}
-        <a class="board-card" href="{{ url_for('board.view_board', board_id=b.id) }}">
+        <a class="board-card" href="{{ url_for('board.view_board', board_id=b.id) }}" data-board-id="{{ b.id }}">
             <h3>{{ b.title }}</h3>
             <p>{{ b.card_count }} card(s) · {{ b.view_mode }}</p>
             <p>{{ b.updated_at[:10] }}</p>
@@ -25,4 +28,33 @@
         {% endif %}
     </div>
 </div>
+<script>
+(function() {
+    const input = document.getElementById("tag-search");
+    let timeout;
+    input.addEventListener("input", () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            const q = input.value.trim();
+            const cards = document.querySelectorAll(".board-card");
+            if (!q) {
+                cards.forEach(c => {
+                    c.style.display = "";
+                    c.setAttribute("href", c.getAttribute("href").split("?")[0]);
+                });
+                return;
+            }
+            const res = await fetch(`/api/search/tags?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            const matchIds = new Set(data.boards.map(b => b.id));
+            cards.forEach(c => {
+                c.style.display = matchIds.has(c.dataset.boardId) ? "" : "none";
+                // Append ?tag= to board links so the board page can auto-highlight
+                const base = c.getAttribute("href").split("?")[0];
+                c.setAttribute("href", base + "?tag=" + encodeURIComponent(q));
+            });
+        }, 300);
+    });
+})();
+</script>
 {% endblock %}

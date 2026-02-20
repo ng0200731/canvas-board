@@ -251,6 +251,27 @@ def delete_connection(conn_id):
     return jsonify({"ok": True})
 
 
+@api_bp.route("/search/tags", methods=["GET"])
+@login_required
+def search_tags_global():
+    q = request.args.get("q", "").strip().lower()
+    if not q:
+        return jsonify({"boards": []})
+
+    results = db.query(
+        """SELECT DISTINCT b.id, b.title
+           FROM boards b
+           JOIN cards c ON c.board_id = b.id
+           JOIN card_tags ct ON ct.card_id = c.id
+           JOIN tags t ON t.id = ct.tag_id
+           WHERE (b.owner_id = ? OR b.id IN (SELECT board_id FROM board_members WHERE user_id = ?))
+             AND LOWER(t.name) LIKE ?
+           ORDER BY b.updated_at DESC""",
+        (current_user.id, current_user.id, f"%{q}%"),
+    )
+    return jsonify({"boards": [{"id": r["id"], "title": r["title"]} for r in results]})
+
+
 # ── Search ─────────────────────────────────────────────────
 
 @api_bp.route("/boards/<board_id>/search", methods=["GET"])
