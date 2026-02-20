@@ -633,13 +633,38 @@
             updateZoom(zoomLevel - 0.1);
         });
 
-        // Mouse wheel zoom
+        // Mouse wheel zoom (scroll up = zoom in, scroll down = zoom out)
         container.addEventListener("wheel", (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                updateZoom(zoomLevel + delta);
-            }
+            e.preventDefault();
+
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const oldZoom = zoomLevel;
+            const newZoom = Math.max(0.5, Math.min(2.0, oldZoom + delta));
+
+            if (oldZoom === newZoom) return;
+
+            // Get mouse position relative to container
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Calculate the point in the canvas that's under the mouse
+            const scrollX = container.scrollLeft;
+            const scrollY = container.scrollTop;
+            const canvasX = (scrollX + mouseX) / oldZoom;
+            const canvasY = (scrollY + mouseY) / oldZoom;
+
+            // Update zoom
+            zoomLevel = newZoom;
+            canvas.style.transform = `scale(${zoomLevel})`;
+            canvas.style.transformOrigin = "0 0";
+            document.getElementById("zoom-level").textContent = Math.round(zoomLevel * 100) + "%";
+
+            // Adjust scroll to keep the same point under the mouse
+            container.scrollLeft = canvasX * newZoom - mouseX;
+            container.scrollTop = canvasY * newZoom - mouseY;
+
+            lines.forEach(l => { try { l.position(); } catch(e) {} });
         }, { passive: false });
 
         // Center all cards in view (center first card) and reset zoom to 100%
