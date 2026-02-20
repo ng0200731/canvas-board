@@ -49,17 +49,19 @@
             canvas.appendChild(el);
         });
 
-        // Flowchart: position cards vertically with even spacing based on actual height
-        if (viewMode === "flowchart") {
-            const gap = 40;
-            let top = 40;
-            cards.forEach(card => {
-                const el = document.getElementById(`card-${card.id}`);
-                if (!el) return;
-                el.style.top = top + "px";
-                top += el.offsetHeight + gap;
-            });
-        }
+        // Auto-layout cards vertically with even spacing (same for both modes)
+        const gap = 40;
+        let top = 40;
+        cards.forEach(card => {
+            const el = document.getElementById(`card-${card.id}`);
+            if (!el) return;
+            el.style.top = top + "px";
+            top += el.offsetHeight + gap;
+        });
+
+        // Hide save button on render (fresh layout)
+        const saveBtn = document.getElementById("btn-save-positions");
+        if (saveBtn) saveBtn.style.display = "none";
 
         setupDrag();
         renderLines();
@@ -78,12 +80,9 @@
         el.id = `card-${card.id}`;
         el.dataset.cardId = card.id;
 
+        el.style.left = "400px";
         if (viewMode === "flowchart") {
-            el.style.left = "400px";
             el.classList.add("no-drag");
-        } else {
-            el.style.left = (card.pos_x || 100) + "px";
-            el.style.top = (card.pos_y || 100) + "px";
         }
 
         // Header
@@ -209,6 +208,7 @@
 
     // ── Drag ──────────────────────────────────────────────
     function setupDrag() {
+        if (viewMode === "flowchart") return; // No drag in flowchart
         cards.forEach(card => {
             const el = document.getElementById(`card-${card.id}`);
             if (!el) return;
@@ -219,14 +219,11 @@
                     onMoveEnd: () => {
                         const rect = el.getBoundingClientRect();
                         const containerRect = container.getBoundingClientRect();
-                        const x = rect.left - containerRect.left + container.scrollLeft;
-                        const y = rect.top - containerRect.top + container.scrollTop;
-                        card.pos_x = x;
-                        card.pos_y = y;
-                        api(`/api/cards/${card.id}`, {
-                            method: "PATCH",
-                            body: { pos_x: x, pos_y: y }
-                        });
+                        card.pos_x = rect.left - containerRect.left + container.scrollLeft;
+                        card.pos_y = rect.top - containerRect.top + container.scrollTop;
+                        // Show save button
+                        const saveBtn = document.getElementById("btn-save-positions");
+                        if (saveBtn) saveBtn.style.display = "inline-block";
                     }
                 });
 
@@ -248,26 +245,24 @@
         lines.forEach(l => { try { l.remove(); } catch(e) {} });
         lines = [];
 
-        if (viewMode === "flowchart") {
-            // Auto-connect sequential cards
-            for (let i = 0; i < cards.length - 1; i++) {
-                const fromEl = document.getElementById(`card-${cards[i].id}`);
-                const toEl = document.getElementById(`card-${cards[i + 1].id}`);
-                if (fromEl && toEl) {
-                    try {
-                        lines.push(new LeaderLine(fromEl, toEl, {
-                            color: "#000",
-                            size: 2,
-                            path: "fluid",
-                            startPlug: "disc",
-                            endPlug: "arrow1",
-                            startSocket: "bottom",
-                            endSocket: "top",
-                            dropShadow: false,
-                            gradient: false
-                        }));
-                    } catch(e) {}
-                }
+        // Auto-connect sequential cards (both modes)
+        for (let i = 0; i < cards.length - 1; i++) {
+            const fromEl = document.getElementById(`card-${cards[i].id}`);
+            const toEl = document.getElementById(`card-${cards[i + 1].id}`);
+            if (fromEl && toEl) {
+                try {
+                    lines.push(new LeaderLine(fromEl, toEl, {
+                        color: "#000",
+                        size: 2,
+                        path: "fluid",
+                        startPlug: "disc",
+                        endPlug: "arrow1",
+                        startSocket: "bottom",
+                        endSocket: "top",
+                        dropShadow: false,
+                        gradient: false
+                    }));
+                } catch(e) {}
             }
         }
 
@@ -405,6 +400,20 @@
                 body: `title=&view_mode=freeform`
             });
             render();
+        });
+
+        // Save positions (freeform)
+        document.getElementById("btn-save-positions").addEventListener("click", async () => {
+            if (!confirm("Save current card positions?")) return;
+            for (const card of cards) {
+                if (card.pos_x != null && card.pos_y != null) {
+                    await api(`/api/cards/${card.id}`, {
+                        method: "PATCH",
+                        body: { pos_x: card.pos_x, pos_y: card.pos_y }
+                    });
+                }
+            }
+            document.getElementById("btn-save-positions").style.display = "none";
         });
 
         // Search
