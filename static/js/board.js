@@ -92,20 +92,24 @@
             // Flowchart mode: use layout direction
             if (flowchartLayout === "horizontal") {
                 let left = 1500; // Start from center
+                const baselineTop = 1500; // Vertical center position
                 cards.forEach(card => {
                     const el = document.getElementById(`card-${card.id}`);
                     if (!el) return;
                     el.style.left = left + "px";
-                    el.style.top = "1500px";
+                    // Center card vertically by offsetting by half its height
+                    el.style.top = (baselineTop - el.offsetHeight / 2) + "px";
                     left += el.offsetWidth + gap;
                 });
             } else {
                 // Vertical layout
                 let top = 40;
+                const baselineLeft = 1500; // Horizontal center position
                 cards.forEach(card => {
                     const el = document.getElementById(`card-${card.id}`);
                     if (!el) return;
-                    el.style.left = "1500px";
+                    // Center card horizontally by offsetting by half its width
+                    el.style.left = (baselineLeft - el.offsetWidth / 2) + "px";
                     el.style.top = top + "px";
                     top += el.offsetHeight + gap;
                 });
@@ -133,6 +137,23 @@
 
         setupDrag();
         renderLines();
+
+        // Auto-center to first card on initial load
+        if (cards.length > 0) {
+            setTimeout(() => {
+                const firstCard = document.getElementById(`card-${cards[0].id}`);
+                if (firstCard) {
+                    const x = parseInt(firstCard.style.left) || 0;
+                    const y = parseInt(firstCard.style.top) || 0;
+                    const cardWidth = firstCard.offsetWidth;
+                    const cardHeight = firstCard.offsetHeight;
+
+                    // Center the first card in viewport
+                    container.scrollLeft = x + (cardWidth / 2) - (container.clientWidth / 2);
+                    container.scrollTop = y + (cardHeight / 2) - (container.clientHeight / 2);
+                }
+            }, 100);
+        }
     }
 
     function cleanup() {
@@ -336,12 +357,15 @@
                     // Use different socket positions based on layout
                     let startSocket = "bottom";
                     let endSocket = "top";
-                    let path = "fluid";
+                    let path = "straight";
 
-                    if (viewMode === "flowchart" && flowchartLayout === "horizontal") {
+                    if (viewMode === "freeform") {
+                        // Freeform uses curved lines
+                        path = "fluid";
+                    } else if (flowchartLayout === "horizontal") {
+                        // Horizontal flowchart
                         startSocket = "right";
                         endSocket = "left";
-                        path = "straight";
                     }
 
                     lines.push(new LeaderLine(fromEl, toEl, {
@@ -618,30 +642,24 @@
             }
         }, { passive: false });
 
-        // Center all cards in view
+        // Center all cards in view (center first card) and reset zoom to 100%
         document.getElementById("btn-center-all").addEventListener("click", () => {
+            // Reset zoom to 100%
+            updateZoom(1.0);
+
             if (cards.length === 0) return;
 
-            // Calculate bounding box of all cards
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            cards.forEach(card => {
-                const el = document.getElementById(`card-${card.id}`);
-                if (!el) return;
-                const x = parseInt(el.style.left) || 0;
-                const y = parseInt(el.style.top) || 0;
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x + el.offsetWidth);
-                maxY = Math.max(maxY, y + el.offsetHeight);
-            });
+            const firstCard = document.getElementById(`card-${cards[0].id}`);
+            if (firstCard) {
+                const x = parseInt(firstCard.style.left) || 0;
+                const y = parseInt(firstCard.style.top) || 0;
+                const cardWidth = firstCard.offsetWidth;
+                const cardHeight = firstCard.offsetHeight;
 
-            // Calculate center position
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-
-            // Scroll to center
-            container.scrollLeft = centerX - container.clientWidth / 2;
-            container.scrollTop = centerY - container.clientHeight / 2;
+                // Center the first card in viewport
+                container.scrollLeft = x + (cardWidth / 2) - (container.clientWidth / 2);
+                container.scrollTop = y + (cardHeight / 2) - (container.clientHeight / 2);
+            }
         });
 
         // Layout toggle

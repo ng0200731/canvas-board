@@ -188,7 +188,7 @@ a { color: #000; }
 /* Canvas controls */
 #canvas-controls {
     position: fixed;
-    top: 80px;
+    top: 110px;
     left: 1rem;
     z-index: 100;
     display: flex;
