@@ -3,9 +3,13 @@
 {% block content %}
 <div class="email-list">
     <h2>Email Inbox</h2>
-    <form method="POST" action="{{ url_for('email.poll_now') }}" style="margin-bottom:1rem;">
-        <button type="submit" style="padding:0.4rem 0.8rem;border:1px solid #000;background:#fff;cursor:pointer;">Check for New Emails</button>
-    </form>
+    <div style="margin-bottom:1rem;">
+        <button id="check-emails-btn" style="padding:0.4rem 0.8rem;border:1px solid #000;background:#fff;cursor:pointer;">
+            <span class="btn-text">Check for New Emails</span>
+            <span class="btn-spinner" style="display:none;"></span>
+        </button>
+        <span id="check-result" style="margin-left:1rem;font-size:0.85rem;"></span>
+    </div>
     {% for em in emails %}
     <a class="email-item" href="{{ url_for('email.email_detail', email_id=em.id) }}">
         <span class="email-from">{{ em.from_addr }}</span>
@@ -22,4 +26,42 @@
     <p style="opacity:0.5;">No emails yet. Click "Check for New Emails" to poll.</p>
     {% endif %}
 </div>
+<script>
+(function() {
+    const btn = document.getElementById("check-emails-btn");
+    const btnText = btn.querySelector(".btn-text");
+    const btnSpinner = btn.querySelector(".btn-spinner");
+    const result = document.getElementById("check-result");
+
+    btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btnText.style.display = "none";
+        btnSpinner.style.display = "inline-block";
+        result.textContent = "";
+
+        try {
+            const res = await fetch("{{ url_for('email.poll_now') }}", { method: "POST" });
+            const data = await res.json();
+
+            if (data.ok) {
+                result.textContent = `Fetched ${data.fetched} new email(s)`;
+                result.style.color = "#000";
+                if (data.fetched > 0) {
+                    setTimeout(() => location.reload(), 1000);
+                }
+            } else {
+                result.textContent = "Error: " + (data.error || "Unknown");
+                result.style.color = "#f00";
+            }
+        } catch (e) {
+            result.textContent = "Failed to check emails";
+            result.style.color = "#f00";
+        } finally {
+            btn.disabled = false;
+            btnText.style.display = "inline";
+            btnSpinner.style.display = "none";
+        }
+    });
+})();
+</script>
 {% endblock %}

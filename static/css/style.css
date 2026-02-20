@@ -73,8 +73,61 @@ a { color: #000; }
     text-decoration: none;
     color: #000;
     transition: background 0.15s;
+    position: relative;
 }
 .board-card:hover { background: #f5f5f5; }
+.board-image-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #000;
+    padding: 0.5rem;
+    display: none;
+    z-index: 1000;
+    margin-top: 0.3rem;
+    min-width: 200px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+    pointer-events: auto;
+}
+.board-card:hover .board-image-popup { display: block; }
+.board-image-loading {
+    font-size: 0.75rem;
+    color: #999;
+    padding: 0.5rem;
+    text-align: center;
+}
+.board-image-loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.board-image-popup-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+}
+.board-image-popup-grid img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid #ccc;
+}
+.board-image-popup-empty {
+    font-size: 0.75rem;
+    color: #999;
+    padding: 0.5rem;
+}
 .board-card h3 { font-size: 1rem; margin-bottom: 0.3rem; }
 .board-card p { font-size: 0.8rem; opacity: 0.6; }
 .new-board-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
@@ -333,3 +386,15 @@ a { color: #000; }
     font-size: 0.85rem;
 }
 .email-actions button.secondary { background: #fff; color: #000; }
+
+/* Button spinner */
+.btn-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+}

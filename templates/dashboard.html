@@ -21,6 +21,11 @@
             <h3>{{ b.title }}</h3>
             <p>{{ b.card_count }} card(s) · {{ b.view_mode }}</p>
             <p>{{ b.updated_at[:10] }}</p>
+            <div class="board-image-popup" onclick="event.preventDefault(); event.stopPropagation();">
+                <div class="board-image-popup-content">
+                    <div class="board-image-loading">Loading...</div>
+                </div>
+            </div>
         </a>
         {% endfor %}
         {% if not boards %}
@@ -54,6 +59,51 @@
                 c.setAttribute("href", base + "?tag=" + encodeURIComponent(q));
             });
         }, 300);
+    });
+
+    // Load images on hover
+    const boardCards = document.querySelectorAll(".board-card");
+    const loadedBoards = new Set();
+
+    boardCards.forEach(card => {
+        card.addEventListener("mouseenter", async () => {
+            const boardId = card.dataset.boardId;
+            if (loadedBoards.has(boardId)) return;
+
+            loadedBoards.add(boardId);
+            const popup = card.querySelector(".board-image-popup-content");
+            const loading = popup.querySelector(".board-image-loading");
+
+            try {
+                const res = await fetch(`/api/boards/${boardId}/images`);
+                const data = await res.json();
+                console.log("Board images data:", data);
+
+                // Remove loading indicator
+                if (loading) loading.remove();
+
+                if (data.images && data.images.length > 0) {
+                    const grid = document.createElement("div");
+                    grid.className = "board-image-popup-grid";
+                    data.images.forEach(img => {
+                        const imgEl = document.createElement("img");
+                        imgEl.src = img.thumb_url;
+                        imgEl.alt = img.original_name;
+                        imgEl.title = img.original_name;
+                        grid.appendChild(imgEl);
+                    });
+                    popup.appendChild(grid);
+                } else {
+                    const empty = document.createElement("div");
+                    empty.className = "board-image-popup-empty";
+                    empty.textContent = "No images";
+                    popup.appendChild(empty);
+                }
+            } catch (e) {
+                console.error("Failed to load board images:", e);
+                if (loading) loading.textContent = "Failed to load";
+            }
+        });
     });
 })();
 </script>

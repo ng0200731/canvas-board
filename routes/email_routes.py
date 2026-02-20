@@ -10,7 +10,7 @@ email_bp = Blueprint("email", __name__)
 @login_required
 def inbox():
     emails = db.query(
-        "SELECT * FROM emails ORDER BY received_at DESC"
+        "SELECT * FROM emails ORDER BY created_at DESC"
     )
     return render_template("email_list.html", emails=emails)
 

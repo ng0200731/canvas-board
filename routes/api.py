@@ -294,3 +294,26 @@ def search_cards(board_id):
         (board_id, f"%{q}%", f"%{q}%"),
     )
     return jsonify({"card_ids": [r["id"] for r in results]})
+
+
+@api_bp.route("/boards/<board_id>/images", methods=["GET"])
+@login_required
+def get_board_images(board_id):
+    board = _check_board_access(board_id)
+    if not board:
+        return jsonify({"error": "Access denied"}), 403
+
+    images = db.query(
+        """SELECT cf.* FROM card_files cf
+           JOIN cards c ON c.id = cf.card_id
+           WHERE c.board_id = ?
+             AND cf.mime_type LIKE 'image/%'
+           ORDER BY cf.uploaded_at DESC
+           LIMIT 6""",
+        (board_id,),
+    )
+
+    for img in images:
+        img["thumb_url"] = get_thumb_url(board_id, img["stored_name"])
+
+    return jsonify({"images": images})
