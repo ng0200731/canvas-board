@@ -12,6 +12,7 @@
     let activeMenu = null;
     let activeCardId = null;
     let searchHighlight = [];
+    let flowchartLayout = "vertical"; // "vertical" or "horizontal"
 
     const canvas = document.getElementById("canvas");
     const container = document.getElementById("canvas-container");
@@ -85,21 +86,46 @@
             canvas.appendChild(el);
         });
 
-        // Auto-layout cards vertically with even spacing
+        // Auto-layout cards
         const gap = 40;
-        let top = 40;
-        cards.forEach(card => {
-            const el = document.getElementById(`card-${card.id}`);
-            if (!el) return;
-            if (viewMode === "freeform" && card.pos_x && card.pos_y) {
-                // Use saved position if previously saved
-                el.style.left = card.pos_x + "px";
-                el.style.top = card.pos_y + "px";
+        if (viewMode === "flowchart") {
+            // Flowchart mode: use layout direction
+            if (flowchartLayout === "horizontal") {
+                let left = 1500; // Start from center
+                cards.forEach(card => {
+                    const el = document.getElementById(`card-${card.id}`);
+                    if (!el) return;
+                    el.style.left = left + "px";
+                    el.style.top = "1500px";
+                    left += el.offsetWidth + gap;
+                });
             } else {
-                el.style.top = top + "px";
+                // Vertical layout
+                let top = 40;
+                cards.forEach(card => {
+                    const el = document.getElementById(`card-${card.id}`);
+                    if (!el) return;
+                    el.style.left = "1500px";
+                    el.style.top = top + "px";
+                    top += el.offsetHeight + gap;
+                });
             }
-            top += el.offsetHeight + gap;
-        });
+        } else {
+            // Freeform mode: use saved positions or default vertical
+            let top = 40;
+            cards.forEach(card => {
+                const el = document.getElementById(`card-${card.id}`);
+                if (!el) return;
+                if (card.pos_x && card.pos_y) {
+                    el.style.left = card.pos_x + "px";
+                    el.style.top = card.pos_y + "px";
+                } else {
+                    el.style.left = "1500px";
+                    el.style.top = top + "px";
+                    top += el.offsetHeight + gap;
+                }
+            });
+        }
 
         // Hide save button on render (fresh layout)
         const saveBtn = document.getElementById("btn-save-positions");
@@ -307,14 +333,25 @@
             const toEl = document.getElementById(`card-${cards[i + 1].id}`);
             if (fromEl && toEl) {
                 try {
+                    // Use different socket positions based on layout
+                    let startSocket = "bottom";
+                    let endSocket = "top";
+                    let path = "fluid";
+
+                    if (viewMode === "flowchart" && flowchartLayout === "horizontal") {
+                        startSocket = "right";
+                        endSocket = "left";
+                        path = "straight";
+                    }
+
                     lines.push(new LeaderLine(fromEl, toEl, {
                         color: "#000",
                         size: 2,
-                        path: "fluid",
+                        path: path,
                         startPlug: "disc",
                         endPlug: "arrow1",
-                        startSocket: "bottom",
-                        endSocket: "top",
+                        startSocket: startSocket,
+                        endSocket: endSocket,
                         dropShadow: false,
                         gradient: false
                     }));
@@ -552,6 +589,84 @@
         document.getElementById("btn-export").addEventListener("click", async () => {
             window.open(`/boards/${BOARD_ID}/export`, "_blank");
         });
+
+        // Canvas controls (zoom, capture, layout)
+        let zoomLevel = 1.0;
+
+        const updateZoom = (newZoom) => {
+            zoomLevel = Math.max(0.5, Math.min(2.0, newZoom));
+            canvas.style.transform = `scale(${zoomLevel})`;
+            canvas.style.transformOrigin = "0 0";
+            document.getElementById("zoom-level").textContent = Math.round(zoomLevel * 100) + "%";
+            lines.forEach(l => { try { l.position(); } catch(e) {} });
+        };
+
+        document.getElementById("btn-zoom-in").addEventListener("click", () => {
+            updateZoom(zoomLevel + 0.1);
+        });
+
+        document.getElementById("btn-zoom-out").addEventListener("click", () => {
+            updateZoom(zoomLevel - 0.1);
+        });
+
+        // Mouse wheel zoom
+        container.addEventListener("wheel", (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                updateZoom(zoomLevel + delta);
+            }
+        }, { passive: false });
+
+        // Center all cards in view
+        document.getElementById("btn-center-all").addEventListener("click", () => {
+            if (cards.length === 0) return;
+
+            // Calculate bounding box of all cards
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            cards.forEach(card => {
+                const el = document.getElementById(`card-${card.id}`);
+                if (!el) return;
+                const x = parseInt(el.style.left) || 0;
+                const y = parseInt(el.style.top) || 0;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + el.offsetWidth);
+                maxY = Math.max(maxY, y + el.offsetHeight);
+            });
+
+            // Calculate center position
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // Scroll to center
+            container.scrollLeft = centerX - container.clientWidth / 2;
+            container.scrollTop = centerY - container.clientHeight / 2;
+        });
+
+        // Layout toggle
+        const btnVertical = document.getElementById("btn-layout-vertical");
+        const btnHorizontal = document.getElementById("btn-layout-horizontal");
+
+        const applyLayout = (layout) => {
+            flowchartLayout = layout;
+            if (layout === "vertical") {
+                btnVertical.classList.add("active");
+                btnHorizontal.classList.remove("active");
+            } else {
+                btnHorizontal.classList.add("active");
+                btnVertical.classList.remove("active");
+            }
+            if (viewMode === "flowchart") {
+                render();
+            }
+        };
+
+        btnVertical.addEventListener("click", () => applyLayout("vertical"));
+        btnHorizontal.addEventListener("click", () => applyLayout("horizontal"));
+
+        // Initialize with vertical layout
+        applyLayout("vertical");
     }
 
     // ── Start ─────────────────────────────────────────────
