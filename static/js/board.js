@@ -18,6 +18,42 @@
     const contextMenu = document.getElementById("card-context-menu");
     const fileInput = document.getElementById("file-upload-input");
 
+    // Reposition lines on scroll
+    container.addEventListener("scroll", () => {
+        lines.forEach(l => { try { l.position(); } catch(e) {} });
+    });
+    window.addEventListener("resize", () => {
+        lines.forEach(l => { try { l.position(); } catch(e) {} });
+    });
+
+    // ── Canvas panning (drag background to scroll) ───────
+    let isPanning = false;
+    let panStartX, panStartY, scrollStartX, scrollStartY;
+
+    container.addEventListener("mousedown", (e) => {
+        // Only pan if clicking directly on the container or canvas background
+        if (e.target !== canvas && e.target !== container) return;
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        scrollStartX = container.scrollLeft;
+        scrollStartY = container.scrollTop;
+        container.style.cursor = "grabbing";
+        e.preventDefault();
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (!isPanning) return;
+        container.scrollLeft = scrollStartX - (e.clientX - panStartX);
+        container.scrollTop = scrollStartY - (e.clientY - panStartY);
+    });
+
+    window.addEventListener("mouseup", () => {
+        if (!isPanning) return;
+        isPanning = false;
+        container.style.cursor = "";
+    });
+
     // ── API helpers ───────────────────────────────────────
     async function api(url, opts = {}) {
         const defaults = { headers: { "Content-Type": "application/json" } };
@@ -49,13 +85,19 @@
             canvas.appendChild(el);
         });
 
-        // Auto-layout cards vertically with even spacing (same for both modes)
+        // Auto-layout cards vertically with even spacing
         const gap = 40;
         let top = 40;
         cards.forEach(card => {
             const el = document.getElementById(`card-${card.id}`);
             if (!el) return;
-            el.style.top = top + "px";
+            if (viewMode === "freeform" && card.pos_x && card.pos_y) {
+                // Use saved position if previously saved
+                el.style.left = card.pos_x + "px";
+                el.style.top = card.pos_y + "px";
+            } else {
+                el.style.top = top + "px";
+            }
             top += el.offsetHeight + gap;
         });
 
@@ -215,13 +257,14 @@
             try {
                 const d = new PlainDraggable(el, {
                     handle: el,
-                    onMove: () => { lines.forEach(l => { try { l.position(); } catch(e) {} }); },
-                    onMoveEnd: () => {
+                    onMove: () => {
+                        lines.forEach(l => { try { l.position(); } catch(e) {} });
                         const rect = el.getBoundingClientRect();
                         const containerRect = container.getBoundingClientRect();
                         card.pos_x = rect.left - containerRect.left + container.scrollLeft;
                         card.pos_y = rect.top - containerRect.top + container.scrollTop;
-                        // Show save button
+                    },
+                    onDragEnd: () => {
                         const saveBtn = document.getElementById("btn-save-positions");
                         if (saveBtn) saveBtn.style.display = "inline-block";
                     }
